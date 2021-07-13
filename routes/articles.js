@@ -52,13 +52,18 @@ router.post("/add", auth, (req, res) => {
 });
 
 router.post("/edit", auth, async (req, res) => {
-    const {id, showAuthor, title, text, images, category} = req.body;
+    const {id, author, showAuthor, title, text, images, category} = req.body;
     const article = await Article.findById(id);
-    if (article.authorId !== req.user) {
+    const user = await User.findById(req.user);
+    if (article.authorId !== user._id.toString() && user.role !== "admin") {
         return res.status(401).json({msg: "Nie masz uprawnień"});
     }
     const status = article.status === "zatwierdzony" ? "edytowany" : "nowy";
-    await Article.findByIdAndUpdate(id, {showAuthor, title, text, images, category, status});
+    if (author && user.role === "admin") {
+        await Article.findByIdAndUpdate(id, {showAuthor, author, title, text, images, category, status});
+    } else {
+        await Article.findByIdAndUpdate(id, {showAuthor, title, text, images, category, status});
+    }
     return res.json(true);
 });
 
